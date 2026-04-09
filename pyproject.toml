@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "transited"
+version = "0.0.1"
+description = ""
+authors = ["Benj Wiswell <benjwiswell@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+railroaded = {git = "https://github.com/bwiswell/railroaded.git", subdirectory = "python"}
+pygame-ce = "^2.5"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
