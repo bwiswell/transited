@@ -33,7 +33,7 @@ MIN_UPDATE_GAP = 0.05        # minimum seconds between any two GTFS queries
 
 def _setup_sdl() -> None:
     if platform.system() == 'Linux' and not os.environ.get('DISPLAY'):
-        os.environ.setdefault('SDL_VIDEODRIVER', 'kmsdrm')
+        os.environ.setdefault('SDL_VIDEODRIVER', 'KMSDRM')
         os.environ.setdefault('SDL_FBDEV', '/dev/fb0')
 
 
