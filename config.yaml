@@ -1,0 +1,71 @@
+# transited configuration
+# Edit this file to add/remove transit agencies and routes.
+# Route colors are automatically read from GTFS data unless overridden here.
+
+display:
+  fps: 30
+  dpi: 96                        # override with TRANSITED_DPI env var
+  background_color: [15, 15, 20]
+  idle_timeout_secs: 30           # seconds before map view snaps back to overview
+  map_tiles: dark                 # 'dark', 'light', or 'none' (CARTO basemap tiles)
+
+stop_matching:
+  proximity_meters: 200           # geographic threshold for "same station"
+  fuzzy_threshold: 0.85           # name similarity ratio (0-1)
+
+agencies:
+  # ---- SEPTA Subway / Elevated ----
+  - name: SEPTA
+    gtfs_url: https://www3.septa.org/developer/gtfs_public.zip
+    gtfs_sub: google_bus
+    strip_to_routes: [L1, B1, B2, B3]
+    routes:
+      - id: L1
+        label: Market-Frankford Line
+      - id: B1
+        label: BSL Local
+      - id: B2
+        label: BSL Express
+      - id: B3
+        label: Broad-Ridge Spur
+
+  # ---- SEPTA Regional Rail ----
+  - name: SEPTA Regional Rail
+    gtfs_url: https://www3.septa.org/developer/gtfs_public.zip
+    gtfs_sub: google_rail
+    live_data:
+      adapter: septa_trainview
+    routes:
+      - id: AIR
+        label: Airport
+      - id: CHE
+        label: Chestnut Hill East
+      - id: CHW
+        label: Chestnut Hill West
+      - id: CYN
+        label: Cynwyd
+      - id: FOX
+        label: Fox Chase
+      - id: LAN
+        label: Lansdale/Doylestown
+      - id: MED
+        label: Media/Wawa
+      - id: NOR
+        label: Manayunk/Norristown
+      - id: PAO
+        label: Paoli/Thorndale
+      - id: TRE
+        label: Trenton
+      - id: WAR
+        label: Warminster
+      - id: WIL
+        label: Wilmington/Newark
+      - id: WTR
+        label: West Trenton
+
+  # ---- PATCO ----
+  - name: PATCO
+    gtfs_url: https://rapid.nationalrtap.org/GTFSFileManagement/UserUploadFiles/13562/PATCO_GTFS.zip
+    routes:
+      - id: "2"
+        label: Speedline
