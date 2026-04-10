@@ -25,6 +25,9 @@ class Renderer(ABC):
         """Initialize renderer state after pygame.init() and screen creation."""
         ...
 
+    def apply_zoom(self, factor: float) -> None:
+        """Apply an initial zoom factor (default: no-op)."""
+
     @abstractmethod
     def handle_event(self, event: pygame.event.Event) -> None:
         """Process a pygame input event (mouse, touch, keyboard)."""

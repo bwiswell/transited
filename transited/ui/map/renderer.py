@@ -115,6 +115,18 @@ class MapRenderer(Renderer):
             )
             LOG.info('Map tiles ready.')
 
+    def apply_zoom(self, factor: float) -> None:
+        if self._proj is not None:
+            cx = self._screen_w // 2
+            cy = self._screen_h // 2
+            self._proj.zoom_at(cx, cy, factor)
+            if self._viewport is not None:
+                # Update home state so snap-back returns to zoomed view.
+                self._viewport._home_cx = self._proj._center_x
+                self._viewport._home_cy = self._proj._center_y
+                self._viewport._home_scale = self._proj._scale
+                self._viewport._dirty = True
+
     def handle_event(self, event: pygame.event.Event) -> None:
         if self._viewport:
             self._viewport.handle_event(event)
