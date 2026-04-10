@@ -59,6 +59,7 @@ class TransitedDisplay:
         route_data: list[RouteData],
         renderer: Renderer,
         sim_time: Optional[datetime] = None,
+        zoom: float = 1.0,
     ) -> None:
         self._config = config
         self._agency_data = agency_data
@@ -66,6 +67,7 @@ class TransitedDisplay:
         self._renderer = renderer
         self._sim_base = sim_time
         self._sim_wall_start = _time.monotonic() if sim_time else None
+        self._zoom = max(zoom, 1.0)
 
         n = len(route_data)
 
@@ -93,9 +95,17 @@ class TransitedDisplay:
 
         screen_w, screen_h = _detect_screen_size()
         screen = pygame.display.set_mode((screen_w, screen_h), pygame.FULLSCREEN)
-        self._renderer.setup(screen, screen_w, screen_h)
 
-        bg = pygame.Surface((screen_w, screen_h))
+        # When zoom > 1, render to a smaller virtual surface and scale up.
+        virt_w = int(screen_w / self._zoom)
+        virt_h = int(screen_h / self._zoom)
+        if self._zoom > 1.0:
+            virt_screen = pygame.Surface((virt_w, virt_h))
+        else:
+            virt_screen = screen
+        self._renderer.setup(virt_screen, virt_w, virt_h)
+
+        bg = pygame.Surface((virt_w, virt_h))
 
         # Initial full refresh.
         now_mono = _time.monotonic()
@@ -152,9 +162,11 @@ class TransitedDisplay:
             # Render.
             if self._renderer.needs_bg_redraw():
                 self._renderer.render_background(bg)
-            screen.blit(bg, (0, 0))
-            self._renderer.render_vehicles(screen, interpolated)
-            self._draw_status_indicator(screen, screen_w)
+            virt_screen.blit(bg, (0, 0))
+            self._renderer.render_vehicles(virt_screen, interpolated)
+            self._draw_status_indicator(virt_screen, virt_w)
+            if self._zoom > 1.0:
+                pygame.transform.scale(virt_screen, (screen_w, screen_h), screen)
             pygame.display.flip()
             clock.tick(self._config.display.fps)
 

@@ -57,6 +57,10 @@ def main() -> None:
         '--config', default=None,
         help='Path to YAML config file (default: config.yaml).',
     )
+    parser.add_argument(
+        '--zoom', type=float, default=1.0,
+        help='Display zoom factor (e.g. 2 = everything twice as large).',
+    )
     args = parser.parse_args()
 
     sim_time = None
@@ -127,6 +131,7 @@ def main() -> None:
         route_data=route_data_list,
         renderer=renderer,
         sim_time=sim_time,
+        zoom=args.zoom,
     )
     display.run()
 
