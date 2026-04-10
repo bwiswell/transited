@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "transited"
-version = "0.0.1"
+version = "0.1.0"
 description = ""
 authors = ["Benj Wiswell <benjwiswell@gmail.com>"]
 
@@ -8,6 +8,7 @@ authors = ["Benj Wiswell <benjwiswell@gmail.com>"]
 python = "^3.11"
 railroaded = {git = "https://github.com/bwiswell/railroaded.git", subdirectory = "python"}
 pygame-ce = "^2.5"
+pyyaml = "^6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"

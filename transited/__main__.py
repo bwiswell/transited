@@ -4,20 +4,11 @@ Entry point for ``python -m transited``.
 Options
 -------
 --sim-time DATETIME
-    Pretend the current time is DATETIME instead of the wall clock.
-    Accepts ISO format (``2026-04-09 16:00:00``) or time-only
-    (``16:00:00``, assumes today's date).  Forces timetable-interpolation
-    mode (no live-feed attempts).
-
-Environment Variables
----------------------
-TRANSITED_DPI
-    Override the default display DPI (96).  Affects font sizes and row
-    heights.
-
-SDL_VIDEODRIVER / SDL_FBDEV
-    Set these for Raspberry Pi framebuffer usage.  ``ui.py`` sets them
-    automatically when ``$DISPLAY`` is unset on Linux.
+    Simulate at a time that advances in real-time from the given start.
+--simple
+    Use the horizontal schematic renderer instead of the geographic map.
+--config PATH
+    Path to a YAML config file (default: ``config.yaml`` in project root).
 """
 from __future__ import annotations
 
@@ -25,17 +16,17 @@ import argparse
 import sys
 from datetime import date, datetime, time
 
-from .static import compute_all_layouts, load_line_data, resolve_connectors
-from .ui import TransitedDisplay
+from .config import load_config
+from .log import LOG, setup_logging
+from .static.loader import load_agencies
+from .static.stops import build_route_data
 
 
 def _parse_sim_time(raw: str) -> datetime:
-    """Parse an ISO datetime or time-only string into a datetime."""
     try:
         return datetime.fromisoformat(raw)
     except ValueError:
         pass
-    # Try time-only (e.g. "16:00:00" or "16:00").
     try:
         t = time.fromisoformat(raw)
         return datetime.combine(date.today(), t)
@@ -48,17 +39,23 @@ def _parse_sim_time(raw: str) -> datetime:
 
 
 def main() -> None:
+    setup_logging()
+
     parser = argparse.ArgumentParser(
         prog='transited',
-        description='Minimal rail/metro line visualisation.',
+        description='Transit line visualisation.',
     )
     parser.add_argument(
-        '--sim-time',
-        default=None,
-        help=(
-            'Simulate at a fixed time (ISO: "2026-04-09 16:00:00" '
-            'or time-only: "16:00:00").  Disables live data.'
-        ),
+        '--sim-time', default=None,
+        help='Simulate at a fixed start time (ISO or HH:MM:SS).',
+    )
+    parser.add_argument(
+        '--simple', action='store_true',
+        help='Use horizontal schematic renderer instead of geographic map.',
+    )
+    parser.add_argument(
+        '--config', default=None,
+        help='Path to YAML config file (default: config.yaml).',
     )
     args = parser.parse_args()
 
@@ -69,25 +66,69 @@ def main() -> None:
         except ValueError as exc:
             print(f'Error: {exc}', file=sys.stderr)
             sys.exit(1)
-        print(f'Simulation time: {sim_time}', flush=True)
+        LOG.info('Simulation time: %s', sim_time)
 
-    print('transited \u2014 loading GTFS data\u2026', flush=True)
-    print(
-        '  (First run downloads and caches feeds; '
-        'the SEPTA bus feed may take several minutes.)',
-        flush=True,
-    )
+    # Load config.
     try:
-        line_data = load_line_data()
-    except Exception as exc:
-        print(f'Fatal: failed to load GTFS data \u2014 {exc}', file=sys.stderr)
+        config = load_config(args.config)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f'Config error: {exc}', file=sys.stderr)
         sys.exit(1)
 
-    layouts = compute_all_layouts(line_data)
-    connectors = resolve_connectors(layouts)
-    print(f'Ready. Displaying {len(layouts)} line(s).', flush=True)
+    # Load GTFS data.
+    LOG.info('transited -- loading GTFS data ...')
+    load_shapes = not args.simple
+    try:
+        agency_data = load_agencies(
+            config.agencies,
+            load_shapes=load_shapes,
+        )
+    except Exception as exc:
+        LOG.error('Failed to load GTFS data: %s', exc)
+        sys.exit(1)
 
-    TransitedDisplay(layouts, sim_time=sim_time, connectors=connectors).run()
+    # Build per-route data (canonical stops + stop index).
+    from .static.stops import RouteData
+    route_data_list: list[RouteData] = []
+    for ad in agency_data:
+        all_route_ids = [r.id for r in ad.config.routes]
+        for rc in ad.config.routes:
+            rd = build_route_data(ad.gtfs, ad.config.name, rc, all_route_ids)
+            LOG.info('  %s/%s: %d stops, %d index entries',
+                     ad.config.name, rc.id, len(rd.stops), len(rd.stop_index))
+            route_data_list.append(rd)
+
+    # Create renderer.
+    if args.simple:
+        from .ui.simple.renderer import SimpleRenderer
+        from .ui.simple.layout import compute_simple_layouts
+        renderer = SimpleRenderer(dpi=config.display.dpi)
+        layouts = compute_simple_layouts(route_data_list)
+        renderer.set_layouts(layouts)
+    else:
+        from .static.layout import build_route_geometries
+        from .ui.map.renderer import MapRenderer
+        geometries = build_route_geometries(agency_data, route_data_list)
+        renderer = MapRenderer(
+            geometries,
+            dpi=config.display.dpi,
+            idle_timeout=config.display.idle_timeout_secs,
+            tile_style=config.display.map_tiles,
+            bg_color=config.display.background_color,
+        )
+
+    LOG.info('Ready. Displaying %d route(s).', len(route_data_list))
+
+    # Run the display loop.
+    from .ui.display import TransitedDisplay
+    display = TransitedDisplay(
+        config=config,
+        agency_data=agency_data,
+        route_data=route_data_list,
+        renderer=renderer,
+        sim_time=sim_time,
+    )
+    display.run()
 
 
 if __name__ == '__main__':
