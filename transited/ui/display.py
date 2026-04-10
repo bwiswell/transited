@@ -60,6 +60,8 @@ class TransitedDisplay:
         renderer: Renderer,
         sim_time: Optional[datetime] = None,
         zoom: float = 1.0,
+        x_offset: int = 0,
+        y_offset: int = 0,
     ) -> None:
         self._config = config
         self._agency_data = agency_data
@@ -68,6 +70,8 @@ class TransitedDisplay:
         self._sim_base = sim_time
         self._sim_wall_start = _time.monotonic() if sim_time else None
         self._zoom = max(zoom, 1.0)
+        self._x_offset = x_offset
+        self._y_offset = y_offset
 
         n = len(route_data)
 
@@ -99,6 +103,8 @@ class TransitedDisplay:
 
         if self._zoom > 1.0:
             self._renderer.apply_zoom(self._zoom)
+        if self._x_offset or self._y_offset:
+            self._renderer.apply_pan(self._x_offset, self._y_offset)
 
         bg = pygame.Surface((screen_w, screen_h))
 

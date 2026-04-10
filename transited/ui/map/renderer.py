@@ -127,6 +127,14 @@ class MapRenderer(Renderer):
                 self._viewport._home_scale = self._proj._scale
                 self._viewport._dirty = True
 
+    def apply_pan(self, dx: int, dy: int) -> None:
+        if self._proj is not None:
+            self._proj.pan(dx, dy)
+            if self._viewport is not None:
+                self._viewport._home_cx = self._proj._center_x
+                self._viewport._home_cy = self._proj._center_y
+                self._viewport._dirty = True
+
     def handle_event(self, event: pygame.event.Event) -> None:
         if self._viewport:
             self._viewport.handle_event(event)

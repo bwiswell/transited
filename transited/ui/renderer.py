@@ -28,6 +28,9 @@ class Renderer(ABC):
     def apply_zoom(self, factor: float) -> None:
         """Apply an initial zoom factor (default: no-op)."""
 
+    def apply_pan(self, dx: int, dy: int) -> None:
+        """Apply an initial pan offset in pixels (default: no-op)."""
+
     @abstractmethod
     def handle_event(self, event: pygame.event.Event) -> None:
         """Process a pygame input event (mouse, touch, keyboard)."""

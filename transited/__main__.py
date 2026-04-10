@@ -61,6 +61,14 @@ def main() -> None:
         '--zoom', type=float, default=1.0,
         help='Display zoom factor (e.g. 2 = everything twice as large).',
     )
+    parser.add_argument(
+        '--x-offset', type=int, default=0,
+        help='Horizontal pan offset in pixels (positive = shift view right).',
+    )
+    parser.add_argument(
+        '--y-offset', type=int, default=0,
+        help='Vertical pan offset in pixels (positive = shift view down).',
+    )
     args = parser.parse_args()
 
     sim_time = None
@@ -132,6 +140,8 @@ def main() -> None:
         renderer=renderer,
         sim_time=sim_time,
         zoom=args.zoom,
+        x_offset=args.x_offset,
+        y_offset=args.y_offset,
     )
     display.run()
 
